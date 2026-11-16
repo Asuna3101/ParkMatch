@@ -1,0 +1,322 @@
+/* ParkMatch · estilos de la aplicación. Colores en variables para poder cambiarlos en un solo lugar. */
+:root {
+  --azul: #1d4ed8;
+  --azul-oscuro: #1e3a8a;
+  --azul-suave: #e8effd;
+  --verde: #15803d;
+  --verde-suave: #e7f6ec;
+  --ambar: #b45309;
+  --ambar-suave: #fdf3e1;
+  --rojo: #b91c1c;
+  --rojo-suave: #fbe9e9;
+  --tinta: #0f172a;
+  --tinta-suave: #475569;
+  --linea: #e2e8f0;
+  --fondo: #f6f8fb;
+  --blanco: #ffffff;
+  --radio: 14px;
+  --sombra: 0 1px 2px rgba(15, 23, 42, 0.06), 0 6px 20px rgba(15, 23, 42, 0.06);
+  --fuente: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fuente-titulos: 'Outfit', 'DM Sans', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { background: var(--fondo); color: var(--tinta); font-family: var(--fuente); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+h1, h2, h3 { font-family: var(--fuente-titulos); color: var(--tinta); line-height: 1.2; margin: 0 0 .5rem; }
+h1 { font-size: clamp(1.6rem, 4vw, 2.1rem); }
+h2 { font-size: 1.2rem; }
+h3 { font-size: 1rem; margin-top: 1rem; }
+p { margin: 0 0 .75rem; }
+a { color: var(--azul); }
+img { max-width: 100%; display: block; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+:focus-visible { outline: 3px solid rgba(29, 78, 216, .45); outline-offset: 2px; }
+
+/* ---------- estructura ---------- */
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+.cabecera { position: sticky; top: 0; z-index: 50; background: rgba(255, 255, 255, .92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--linea); }
+.cabecera-contenido { max-width: 1200px; margin: 0 auto; padding: 0 16px; height: 64px; display: flex; align-items: center; gap: 20px; }
+.marca { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--tinta); font-family: var(--fuente-titulos); font-weight: 700; font-size: 1.2rem; }
+.marca-p { width: 32px; height: 32px; border-radius: 9px; background: var(--azul); color: #fff; display: grid; place-items: center; font-weight: 800; }
+.nav-principal { display: flex; gap: 4px; margin-left: 12px; }
+.nav-principal a { text-decoration: none; color: var(--tinta-suave); padding: 8px 12px; border-radius: 10px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.nav-principal a:hover { background: var(--fondo); }
+.nav-principal a.active { color: var(--azul); background: var(--azul-suave); }
+.cabecera-usuario { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--azul-suave); color: var(--azul-oscuro); display: grid; place-items: center; font-weight: 700; font-size: .85rem; text-decoration: none; flex-shrink: 0; }
+.contenido { flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; padding: 24px 16px 96px; }
+.contador { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--rojo); color: #fff; font-size: .72rem; font-weight: 700; }
+.cargando { color: var(--tinta-suave); padding: 40px 0; text-align: center; }
+.pagina { display: block; }
+.pagina-formulario { max-width: 880px; margin: 0 auto; }
+.encabezado-pagina { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.bajada-pagina { color: var(--tinta-suave); margin-bottom: 16px; }
+.volver { display: inline-block; margin-bottom: 8px; text-decoration: none; color: var(--tinta-suave); font-size: .95rem; }
+.bloque { background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio); padding: 20px; margin-top: 20px; box-shadow: var(--sombra); }
+.bloque h2 { margin-bottom: 12px; }
+.texto { white-space: pre-line; }
+.dos-columnas { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.acciones-formulario { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+.aviso-bloque { background: var(--ambar-suave); color: var(--ambar); padding: 12px 14px; border-radius: 10px; }
+.lista-simple { margin: 0 0 8px; padding-left: 18px; }
+.lista-simple li { margin-bottom: 4px; }
+.vacio { background: var(--blanco); border: 1px dashed #cbd5e1; border-radius: var(--radio); padding: 32px 20px; text-align: center; color: var(--tinta-suave); }
+.vacio h2 { color: var(--tinta); }
+.vacio p { max-width: 420px; margin: 0 auto 12px; }
+
+/* ---------- botones ---------- */
+.boton { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid transparent; border-radius: 10px; padding: 10px 16px; font-weight: 600; text-decoration: none; background: var(--blanco); color: var(--tinta); transition: background .15s, border-color .15s; min-height: 40px; }
+.boton-primario { background: var(--azul); color: #fff; }
+.boton-primario:hover:not(:disabled) { background: var(--azul-oscuro); }
+.boton-secundario { background: var(--blanco); border-color: #cbd5e1; color: var(--azul-oscuro); }
+.boton-secundario:hover:not(:disabled) { background: var(--azul-suave); }
+.boton-texto { background: transparent; color: var(--azul); padding-left: 8px; padding-right: 8px; }
+.boton-texto:hover:not(:disabled) { background: var(--azul-suave); }
+.boton-peligro { color: var(--rojo); }
+.boton-peligro:hover:not(:disabled) { background: var(--rojo-suave); }
+.boton-chico { padding: 8px 14px; min-height: 36px; }
+.boton-grande { padding: 13px 22px; font-size: 1.02rem; min-height: 48px; }
+.boton-ancho { width: 100%; }
+.boton-icono { width: 44px; min-width: 44px; padding: 0; }
+
+/* ---------- formularios ---------- */
+.campo { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; flex: 1; min-width: 0; }
+.campo > span { font-weight: 600; font-size: .92rem; }
+.campo em { font-weight: 400; color: var(--tinta-suave); }
+.campo-corto { flex: 0 0 auto; width: 130px; }
+input, select, textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px; background: var(--blanco); min-height: 42px; }
+textarea { min-height: 96px; resize: vertical; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--azul); box-shadow: 0 0 0 3px rgba(29, 78, 216, .15); }
+.campo .fila-campos input { flex: 1; }
+.fila-campos { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.fila-campos > .campo { margin-bottom: 14px; }
+.casilla { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0 14px; font-size: .95rem; cursor: pointer; }
+.casilla input { width: 18px; height: 18px; min-height: 0; margin-top: 2px; flex-shrink: 0; accent-color: var(--azul); }
+.con-prefijo { display: flex; align-items: center; gap: 6px; }
+.con-prefijo > span { color: var(--tinta-suave); font-weight: 600; }
+.con-prefijo input { width: 100%; }
+.ayuda { color: var(--tinta-suave); font-size: .86rem; margin: 4px 0 0; }
+.ayuda-alerta { color: var(--rojo); }
+.mensaje-error { color: var(--rojo); background: var(--rojo-suave); border-radius: 10px; padding: 10px 12px; font-size: .92rem; margin: 8px 0; }
+.tarjeta-formulario { max-width: 440px; margin: 24px auto; background: var(--blanco); border: 1px solid var(--linea); border-radius: 18px; padding: 28px; box-shadow: var(--sombra); }
+.tarjeta-formulario h1 { margin-bottom: 18px; }
+.pie-formulario { text-align: center; margin: 16px 0 0; color: var(--tinta-suave); }
+.formulario-amplio { display: block; }
+.acciones-reserva { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.acciones-reserva input { width: auto; flex: 1 1 160px; }
+.acciones-reserva select { width: auto; }
+.opciones-rol { border: 0; padding: 0; margin: 0 0 18px; display: grid; gap: 10px; }
+.opciones-rol legend { font-weight: 600; margin-bottom: 8px; }
+.opcion-rol { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 14px; cursor: pointer; }
+.opcion-rol input { grid-row: span 2; width: 18px; min-height: 0; accent-color: var(--azul); }
+.opcion-rol span { color: var(--tinta-suave); font-size: .9rem; }
+.opcion-rol.elegida { border-color: var(--azul); background: var(--azul-suave); }
+.datos-cochera .campo textarea { font-family: inherit; }
+.fotos-grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.foto-miniatura { border-radius: 12px; overflow: hidden; border: 1px solid var(--linea); background: var(--blanco); }
+.foto-miniatura img { width: 100%; height: 110px; object-fit: cover; }
+.foto-miniatura .boton { width: 100%; border-radius: 0; }
+.subir-foto { border: 2px dashed #94a3b8; border-radius: 12px; min-height: 150px; display: grid; place-content: center; text-align: center; cursor: pointer; color: var(--azul); font-weight: 600; background: var(--blanco); position: relative; }
+.subir-foto:hover { background: var(--azul-suave); }
+.subir-foto input { position: absolute; inset: 0; opacity: 0; cursor: pointer; min-height: 0; }
+.subir-foto small { color: var(--tinta-suave); font-weight: 400; }
+.pestanas { display: flex; gap: 6px; border-bottom: 1px solid var(--linea); margin: 16px 0; overflow-x: auto; }
+.pestana { background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 12px; font-weight: 600; color: var(--tinta-suave); white-space: nowrap; }
+.pestana.activa { color: var(--azul); border-bottom-color: var(--azul); }
+.contador-pestana { display: inline-block; background: var(--fondo); border-radius: 10px; padding: 0 7px; font-size: .8rem; margin-left: 4px; }
+
+/* ---------- etiquetas y avisos ---------- */
+.etiqueta { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: .78rem; font-weight: 700; background: var(--fondo); color: var(--tinta-suave); white-space: nowrap; }
+.etiqueta-ok { background: var(--verde-suave); color: var(--verde); }
+.etiqueta-aviso { background: var(--ambar-suave); color: var(--ambar); }
+.etiqueta-error { background: var(--rojo-suave); color: var(--rojo); }
+.etiqueta-neutro { background: #eef2f7; color: var(--tinta-suave); }
+.avisos { position: fixed; right: 16px; bottom: 88px; z-index: 100; display: grid; gap: 8px; max-width: min(360px, calc(100vw - 32px)); }
+.aviso { background: var(--tinta); color: #fff; border-radius: 12px; padding: 12px 16px; box-shadow: 0 10px 30px rgba(15, 23, 42, .25); font-size: .92rem; animation: entrar .2s ease-out; }
+.aviso-ok { background: var(--verde); }
+.aviso-error { background: var(--rojo); }
+@keyframes entrar { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ---------- inicio ---------- */
+.inicio { display: grid; gap: 32px; }
+.portada { display: grid; grid-template-columns: 1.1fr .9fr; gap: 32px; align-items: center; padding: 24px 0; }
+.antetitulo { text-transform: uppercase; letter-spacing: .08em; font-size: .8rem; font-weight: 700; color: var(--azul); }
+.portada h1 { font-size: clamp(2rem, 5vw, 3.2rem); }
+.bajada { font-size: 1.1rem; color: var(--tinta-suave); max-width: 520px; }
+.portada-acciones { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+.portada-dibujo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cajon { background: var(--blanco); border: 2px solid var(--linea); border-radius: 16px; height: 120px; display: grid; place-items: center; font-family: var(--fuente-titulos); font-weight: 700; box-shadow: var(--sombra); }
+.cajon-libre { background: var(--verde-suave); border-color: #9bd7ad; color: var(--verde); }
+.pasos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.pasos article { background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio); padding: 22px; box-shadow: var(--sombra); }
+.pasos ol { padding-left: 20px; margin: 0; color: var(--tinta-suave); }
+.pasos li { margin-bottom: 6px; }
+
+/* ---------- buscar (mapa + lista) ---------- */
+.buscar { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 0; height: calc(100vh - 64px - 24px); margin: -24px -16px; }
+.buscar-panel { background: var(--blanco); border-right: 1px solid var(--linea); display: flex; flex-direction: column; padding: 14px; overflow: hidden; min-height: 0; }
+.buscador { display: flex; gap: 8px; margin-bottom: 10px; }
+.buscador input { flex: 1; }
+.zonas { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; }
+.chip { border: 1px solid #cbd5e1; background: var(--blanco); border-radius: 999px; padding: 6px 12px; font-size: .88rem; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.chip:hover { background: var(--fondo); }
+.chip-accion { border-color: var(--azul); color: var(--azul); font-weight: 600; }
+.resultado-conteo { font-size: .9rem; color: var(--tinta-suave); margin: 8px 0; }
+.lista-cocheras { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; display: grid; gap: 10px; min-height: 0; padding-right: 4px; }
+.tarjeta-cochera { display: grid; grid-template-columns: 110px 1fr; gap: 12px; text-decoration: none; color: inherit; background: var(--blanco); border: 1px solid var(--linea); border-radius: 14px; overflow: hidden; padding: 0; transition: border-color .15s, box-shadow .15s; }
+.tarjeta-cochera:hover, .tarjeta-cochera.activa { border-color: var(--azul); box-shadow: 0 0 0 3px rgba(29, 78, 216, .12); }
+.tarjeta-cochera img { width: 110px; height: 100%; min-height: 110px; object-fit: cover; background: var(--fondo); }
+.tarjeta-cuerpo { padding: 10px 12px 10px 0; min-width: 0; }
+.tarjeta-cuerpo h2 { font-size: 1rem; margin-bottom: 2px; }
+.tarjeta-lugar { display: flex; align-items: center; gap: 4px; color: var(--tinta-suave); font-size: .88rem; margin: 2px 0; }
+.rasgos { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 6px 0; }
+.rasgos li { font-size: .78rem; background: var(--fondo); border-radius: 6px; padding: 2px 8px; color: var(--tinta-suave); }
+.tarjeta-precio { font-size: .92rem; margin: 4px 0 0; }
+.buscar-mapa { min-width: 0; min-height: 0; }
+.mapa { width: 100%; height: 100%; min-height: 240px; border-radius: 0; z-index: 1; }
+.buscar-mapa .mapa { height: 100%; }
+.pin { background: var(--blanco); color: var(--tinta); border: 2px solid var(--tinta); border-radius: 999px; padding: 3px 9px; font-weight: 700; font-size: .8rem; white-space: nowrap; transform: translate(-50%, -50%); box-shadow: 0 2px 8px rgba(15, 23, 42, .2); }
+.pin-activo { background: var(--tinta); color: #fff; }
+.pin-punto { width: 20px; height: 20px; border-radius: 50%; background: var(--azul); border: 3px solid #fff; transform: translate(-50%, -50%); box-shadow: 0 2px 8px rgba(15, 23, 42, .3); }
+.pin-yo { width: 16px; height: 16px; border-radius: 50%; background: #0ea5e9; border: 3px solid #fff; transform: translate(-50%, -50%); box-shadow: 0 0 0 6px rgba(14, 165, 233, .2); }
+
+/* ---------- mis cocheras y tarjetas propias ---------- */
+.grilla-cocheras { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.tarjeta-propia { background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio); overflow: hidden; box-shadow: var(--sombra); display: flex; flex-direction: column; }
+.tarjeta-propia img { width: 100%; height: 160px; object-fit: cover; background: var(--fondo); }
+.tarjeta-propia .tarjeta-cuerpo { padding: 14px 16px; }
+.acciones-tarjeta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+/* ---------- ficha de cochera ---------- */
+.ficha { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.ficha-principal { min-width: 0; }
+.galeria img { width: 100%; height: clamp(220px, 40vw, 380px); object-fit: cover; border-radius: 18px; background: var(--fondo); }
+.galeria-miniaturas { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; }
+.galeria-miniaturas button { border: 2px solid transparent; border-radius: 10px; padding: 0; background: none; flex-shrink: 0; }
+.galeria-miniaturas button.activa { border-color: var(--azul); }
+.galeria-miniaturas img { width: 84px; height: 60px; object-fit: cover; border-radius: 8px; }
+.ficha-cabecera { margin: 18px 0 8px; }
+.ficha-cabecera h1 { font-size: clamp(1.5rem, 3.5vw, 2rem); }
+.ficha-lateral { position: sticky; top: 84px; }
+.tarjeta-reserva { background: var(--blanco); border: 1px solid var(--linea); border-radius: 18px; padding: 20px; box-shadow: var(--sombra); }
+.precio-grande { font-size: 1.4rem; font-family: var(--fuente-titulos); }
+.precio-grande span { font-size: .95rem; color: var(--tinta-suave); font-family: var(--fuente); }
+.formulario-reserva { margin-top: 14px; }
+.cotizacion { background: var(--azul-suave); color: var(--azul-oscuro); border-radius: 10px; padding: 10px 12px; margin: 8px 0 12px; }
+.medio-pago { border: 0; padding: 0; margin: 4px 0 14px; display: grid; gap: 6px; }
+.medio-pago legend { font-weight: 600; margin-bottom: 4px; }
+.medio-pago select { margin-top: 6px; }
+.tarjeta-reserva .boton-texto { margin-top: 8px; }
+
+/* ---------- reservas ---------- */
+.lista-reservas { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.tarjeta-reserva-lista { background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio); padding: 18px; box-shadow: var(--sombra); }
+.tarjeta-reserva-lista h2 { font-size: 1.05rem; margin-bottom: 0; }
+.cabecera-reserva { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 6px; }
+.codigo-acceso { margin-top: 14px; background: var(--fondo); border-radius: 12px; padding: 14px; text-align: center; }
+.codigo-acceso .qr { width: 200px; height: 200px; margin: 0 auto 8px; background: #fff; border-radius: 10px; padding: 8px; }
+.confirmar { margin-top: 12px; background: var(--rojo-suave); border-radius: 10px; padding: 12px; }
+.confirmar p { margin-bottom: 8px; }
+.panel-tarjetas { background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio); padding: 18px; box-shadow: var(--sombra); }
+.panel-tarjetas .lista-simple { list-style: none; padding: 0; }
+.panel-tarjetas .lista-simple li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--linea); }
+.formulario-tarjeta { margin-top: 12px; }
+.tabla { width: 100%; border-collapse: collapse; background: var(--blanco); font-size: .92rem; }
+.tabla th, .tabla td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--linea); vertical-align: top; }
+.tabla th { color: var(--tinta-suave); font-weight: 600; font-size: .85rem; }
+.linea-tiempo { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--linea); }
+.linea-tiempo li { position: relative; padding: 0 0 18px 20px; }
+.linea-tiempo li::before { content: ''; position: absolute; left: -6px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--azul); }
+.linea-tiempo time { font-size: .85rem; color: var(--tinta-suave); display: block; }
+
+/* ---------- editores de calendario y tarifas ---------- */
+.calendario-editor { display: grid; gap: 8px; }
+.dia-fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid var(--linea); border-radius: 12px; background: var(--blanco); }
+.dia-inactivo { background: var(--fondo); }
+.dia-nombre { display: flex; align-items: center; gap: 8px; font-weight: 600; min-width: 130px; cursor: pointer; }
+.dia-nombre input { width: 18px; min-height: 0; accent-color: var(--azul); }
+.dia-horas { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dia-horas select, .tarifa-fila select { width: auto; min-width: 96px; }
+.apagado { color: var(--tinta-suave); font-size: .92rem; }
+.tarifas-editor { display: grid; gap: 10px; }
+.tarifa-fila { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tarifa-fila .con-prefijo { width: 150px; }
+.tarifa-fila .con-prefijo input { width: 100%; }
+
+/* ---------- chat ---------- */
+.chat { display: grid; grid-template-columns: 340px minmax(0, 1fr); height: calc(100vh - 64px - 24px - 0px); margin: -24px -16px; background: var(--blanco); border-top: 1px solid var(--linea); min-height: 420px; }
+.chat-lista { border-right: 1px solid var(--linea); overflow-y: auto; padding: 16px 12px; }
+.chat-lista h1 { font-size: 1.4rem; padding: 0 6px; }
+.chat-lista ul { list-style: none; margin: 0; padding: 0; }
+.fila-chat { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px; border-radius: 12px; text-decoration: none; color: inherit; }
+.fila-chat:hover, .fila-chat.activa { background: var(--azul-suave); }
+.fila-chat-texto { display: grid; min-width: 0; }
+.fila-chat-texto small { color: var(--tinta-suave); }
+.fila-chat-texto .ultimo { color: var(--tinta-suave); font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-hilo { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.chat-vacio { margin: auto; color: var(--tinta-suave); padding: 24px; text-align: center; }
+.chat-cabecera { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--linea); }
+.chat-cabecera small { display: block; color: var(--tinta-suave); }
+.chat-volver { display: none; }
+.chat-mensajes { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: var(--fondo); }
+.burbuja { align-self: flex-start; max-width: 75%; background: var(--blanco); border: 1px solid var(--linea); border-radius: 16px 16px 16px 4px; padding: 8px 12px; }
+.burbuja.propia { align-self: flex-end; background: var(--azul); color: #fff; border-color: var(--azul); border-radius: 16px 16px 4px 16px; }
+.burbuja p { margin: 0; white-space: pre-wrap; word-break: break-word; }
+.burbuja small { display: block; font-size: .72rem; opacity: .7; text-align: right; }
+.chat-enviar { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--linea); }
+.chat-enviar input { flex: 1; }
+.chat-enviar .boton { width: 44px; padding: 0; }
+
+/* ---------- tarjetas de la ficha de anuncio para el mapa pequeño ---------- */
+.mapa-pequeno { height: 240px; }
+
+/* ---------- navegación inferior (solo celular) ---------- */
+.nav-inferior { display: none; }
+
+/* ---------- celular ---------- */
+@media (max-width: 900px) {
+  .portada, .pasos, .ficha, .dos-columnas { grid-template-columns: 1fr; }
+  .ficha-lateral { position: static; }
+  .dos-columnas .panel-tarjetas { order: -1; }
+  .buscar { grid-template-columns: minmax(0, 1fr); height: auto; margin: -24px -16px; }
+  .buscar > * { min-width: 0; }
+  .buscar-mapa { overflow: hidden; }
+  .buscar-panel { border-right: 0; border-bottom: 1px solid var(--linea); max-height: none; overflow: visible; }
+  .lista-cocheras { overflow: visible; }
+  .buscar-mapa .mapa { height: 320px; min-height: 320px; }
+  .chat { grid-template-columns: minmax(0, 1fr); height: calc(100vh - 64px - 80px); margin: -24px -16px 0; }
+  .chat-lista, .chat-hilo { display: none; }
+  .chat:not(.chat-abierto) .chat-lista { display: block; }
+  .chat.chat-abierto .chat-hilo { display: flex; }
+  .chat.chat-abierto .chat-lista { display: none; }
+  .chat-volver { display: inline-flex; }
+}
+
+@media (max-width: 780px) {
+  .nav-principal { display: none; }
+  .cabecera-contenido { height: 58px; gap: 12px; }
+  .contenido { padding: 16px 16px 96px; }
+  .nav-inferior { display: grid; grid-template-columns: repeat(3, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--blanco); border-top: 1px solid var(--linea); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+  .nav-inferior a { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .75rem; color: var(--tinta-suave); text-decoration: none; padding: 4px; border-radius: 10px; font-weight: 500; }
+  .nav-inferior a.active { color: var(--azul); }
+  .nav-icono { position: relative; display: inline-grid; place-items: center; height: 26px; }
+  .nav-icono .contador { position: absolute; top: -6px; right: -12px; }
+  .avisos { bottom: 84px; right: 12px; left: 12px; max-width: none; }
+  .tarjeta-formulario { margin: 12px auto; padding: 22px 18px; }
+  .campo-corto { width: auto; flex: 1 1 110px; }
+  .acciones-formulario { flex-direction: column-reverse; }
+  .acciones-formulario .boton { width: 100%; }
+  .cabecera-usuario .boton-texto { display: none; }
+  .galeria-miniaturas img { width: 72px; height: 52px; }
+  .codigo-acceso .qr { width: 180px; height: 180px; }
+}
+
+@media (max-width: 420px) {
+  .portada-dibujo { display: none; }
+  .tarjeta-cochera { grid-template-columns: 96px 1fr; }
+  .tarjeta-cochera img { width: 96px; min-height: 100px; }
+  .dia-nombre { min-width: 100%; }
+}
