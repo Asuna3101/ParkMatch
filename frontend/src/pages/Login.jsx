@@ -45,6 +45,7 @@ export default function Login() {
           {enviando ? 'Ingresando…' : 'Ingresar'}
         </button>
       </form>
+      <p className="pie-formulario"><Link to="/recuperar">¿Olvidaste tu contraseña?</Link></p>
       <p className="pie-formulario">¿Aún no tienes cuenta? <Link to="/registro">Créala aquí</Link></p>
     </div>
   )

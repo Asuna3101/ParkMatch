@@ -14,7 +14,7 @@ from starlette.concurrency import run_in_threadpool
 from . import config, schemas
 from .database import SessionLocal
 from .models import Conversacion, Usuario
-from .routers import auth, chat, cocheras, cuenta, reservas
+from .routers import admin, auth, chat, cocheras, comunidad, cuenta, perfil, reservas
 from .security import leer_token
 from .ws import gestor
 
@@ -36,6 +36,9 @@ app.include_router(cocheras.router)
 app.include_router(reservas.router)
 app.include_router(chat.router)
 app.include_router(cuenta.router)
+app.include_router(perfil.router)
+app.include_router(comunidad.router)
+app.include_router(admin.router)
 
 _ETIQUETAS = {
     "nombre": "El nombre", "correo": "El correo", "contrasena": "La contraseña",

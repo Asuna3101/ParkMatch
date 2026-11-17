@@ -1,15 +1,22 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { useTiempoReal } from '../tiempo-real'
+import { urlFoto } from '../api'
 import { iniciales } from '../utils'
-import { IconoBuscar, IconoChat, IconoCochera, IconoReservas } from './Iconos'
+import { IconoBuscar, IconoChat, IconoCochera, IconoEscudo, IconoReservas } from './Iconos'
+import Notificaciones from './Notificaciones'
 
 export default function Layout() {
-  const { usuario, salir, esArrendador } = useAuth()
+  const { usuario, salir, esArrendador, esAdmin } = useAuth()
   const { sinLeer } = useTiempoReal()
   const navegar = useNavigate()
 
-  const enlaces = usuario
+  const enlaces = esAdmin
+    ? [
+        { a: '/admin', texto: 'Moderación', icono: IconoEscudo },
+        { a: '/buscar', texto: 'Mapa', icono: IconoBuscar },
+      ]
+    : usuario
     ? [
         esArrendador
           ? { a: '/mis-cocheras', texto: 'Mis cocheras', icono: IconoCochera }
@@ -45,8 +52,9 @@ export default function Layout() {
           <div className="cabecera-usuario">
             {usuario ? (
               <>
-                <Link to="/registro-de-actividad" className="avatar" title={`${usuario.nombre} · ver registro de actividad`}>
-                  {iniciales(usuario.nombre)}
+                <Notificaciones />
+                <Link to="/perfil" className="avatar" title={`${usuario.nombre} · mi perfil`} aria-label="Mi perfil">
+                  {usuario.foto_url ? <img src={urlFoto(usuario.foto_url)} alt="" /> : iniciales(usuario.nombre)}
                 </Link>
                 <button className="boton boton-texto" onClick={cerrar}>Salir</button>
               </>

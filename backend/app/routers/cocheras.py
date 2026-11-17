@@ -13,9 +13,9 @@ from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from .. import auditoria, config, schemas
+from .. import auditoria, config, reputacion, schemas
 from ..database import get_db
-from ..deps import solo_arrendador
+from ..deps import solo_arrendador, usuario_opcional
 from ..disponibilidad import evaluar
 from ..models import Cochera, Disponibilidad, FotoCochera, Reserva, Tarifa, Ubicacion, Usuario
 
@@ -23,7 +23,9 @@ router = APIRouter(prefix="/api/cocheras", tags=["Cocheras"])
 
 
 # ----------------------------------------------------------------- utilidades
-def _resumen(c: Cochera, distancia: Optional[float] = None) -> schemas.CocheraResumen:
+def _resumen(c: Cochera, distancia: Optional[float] = None, calificacion=None,
+             costo_horario: Optional[float] = None) -> schemas.CocheraResumen:
+    promedio, total = calificacion or (None, 0)
     return schemas.CocheraResumen(
         id=c.id, titulo=c.titulo, tipo_vehiculo=c.tipo_vehiculo, techada=c.techada,
         precio_hora=float(c.precio_hora), activa=c.activa,
@@ -31,6 +33,8 @@ def _resumen(c: Cochera, distancia: Optional[float] = None) -> schemas.CocheraRe
         latitud=float(c.ubicacion.latitud), longitud=float(c.ubicacion.longitud),
         foto=c.fotos[0].url if c.fotos else None,
         distancia_km=round(distancia, 2) if distancia is not None else None,
+        suspendida=c.suspendida, calificacion=promedio, total_calificaciones=total,
+        costo_horario=costo_horario,
     )
 
 
@@ -113,7 +117,7 @@ def publicar(
     db.flush()
     auditoria.registrar(db, usuario.id, "cochera_publicada", "cochera", cochera.id, titulo=cochera.titulo)
     db.commit()
-    return _detalle(db, cochera)
+    return _detalle(db, cochera, con_sesion=True)
 
 
 # -------------------------------------------------------------------- listar
@@ -125,7 +129,12 @@ def mis_cocheras(usuario: Usuario = Depends(solo_arrendador), db: Session = Depe
         .options(selectinload(Cochera.ubicacion), selectinload(Cochera.fotos))
         .order_by(Cochera.creado_en.desc())
     ).all()
-    return [_resumen(c) for c in cocheras]
+    notas = reputacion.promedios_cocheras(db, [c.id for c in cocheras])
+    return [_resumen(c, calificacion=notas.get(c.id)) for c in cocheras]
+
+
+# Qué tipos de vehículo entran en cada tipo de cochera: en una de camioneta cabe un auto.
+ADMITE = {"moto": ("moto", "auto", "camioneta"), "auto": ("auto", "camioneta"), "camioneta": ("camioneta",)}
 
 
 @router.get("/buscar", response_model=List[schemas.CocheraResumen])
@@ -133,9 +142,19 @@ def buscar(
     lat: float = Query(..., ge=-90, le=90),
     lng: float = Query(..., ge=-180, le=180),
     radio_km: float = Query(3, gt=0, le=50),
+    precio_max: Optional[float] = Query(None, gt=0, description="Precio base máximo por hora"),
+    tipo_vehiculo: Optional[str] = Query(None, pattern="^(moto|auto|camioneta)$",
+                                         description="Vehículo que se quiere estacionar"),
+    techada: Optional[bool] = Query(None),
+    inicio: Optional[datetime] = Query(None, description="Ingreso deseado (con fin)"),
+    fin: Optional[datetime] = Query(None, description="Salida deseada (con inicio)"),
     db: Session = Depends(get_db),
 ):
     """Cocheras activas alrededor de un punto, de la más cercana a la más lejana.
+
+    Filtros opcionales (US-10, US-12): precio máximo, tipo de vehículo, techada
+    y un horario. Con horario solo quedan las cocheras libres en ese rango, y
+    cada una trae el costo calculado de ese horario.
 
     La distancia se calcula con la fórmula del semiverseno directamente en
     PostgreSQL. Antes se descarta con un rectángulo lo que claramente queda
@@ -149,11 +168,23 @@ def buscar(
     margen_lat = radio_km / 111.0
     margen_lng = radio_km / (111.0 * max(0.1, abs(math.cos(math.radians(lat)))))
 
+    if (inicio is None) != (fin is None):
+        raise HTTPException(422, "Para buscar por horario indica la hora de ingreso y la de salida.")
+    filtros = []
+    if precio_max is not None:
+        filtros.append(Cochera.precio_hora <= precio_max)
+    if tipo_vehiculo:
+        filtros.append(Cochera.tipo_vehiculo.in_(ADMITE[tipo_vehiculo]))
+    if techada is not None:
+        filtros.append(Cochera.techada.is_(techada))
+
     filas = db.execute(
         select(Cochera, distancia.label("distancia"))
         .join(Ubicacion, Ubicacion.cochera_id == Cochera.id)
         .where(
             Cochera.activa.is_(True),
+            Cochera.suspendida.is_(False),
+            *filtros,
             Ubicacion.latitud.between(lat - margen_lat, lat + margen_lat),
             Ubicacion.longitud.between(lng - margen_lng, lng + margen_lng),
             distancia <= radio_km,
@@ -162,12 +193,25 @@ def buscar(
         .order_by("distancia")
         .limit(100)
     ).all()
-    return [_resumen(c, float(d)) for c, d in filas]
+
+    if inicio is not None:
+        libres = []
+        for c, d in filas:
+            motivo, costo, _ = evaluar(db, c, inicio, fin)
+            if motivo is None:
+                libres.append((c, d, float(costo)))
+        resultado = libres
+    else:
+        resultado = [(c, d, None) for c, d in filas]
+
+    notas = reputacion.promedios_cocheras(db, [c.id for c, _, _ in resultado])
+    return [_resumen(c, float(d), notas.get(c.id), costo) for c, d, costo in resultado]
 
 
 # ------------------------------------------------------------------- detalle
-def _detalle(db: Session, c: Cochera) -> schemas.CocheraDetalle:
+def _detalle(db: Session, c: Cochera, con_sesion: bool = False) -> schemas.CocheraDetalle:
     ahora = datetime.now(timezone.utc)
+    promedio, total = reputacion.promedios_cocheras(db, [c.id]).get(c.id, (None, 0))
     ocupado = db.execute(
         select(Reserva.inicio, Reserva.fin)
         .where(Reserva.cochera_id == c.id, Reserva.estado == "confirmada",
@@ -184,12 +228,25 @@ def _detalle(db: Session, c: Cochera) -> schemas.CocheraDetalle:
         tarifas=[schemas.FranjaTarifa.model_validate(t) for t in c.tarifas],
         disponibilidad=[schemas.FranjaDisponible.model_validate(d) for d in c.disponibilidades],
         ocupado=[schemas.Ocupado(inicio=i, fin=f) for i, f in ocupado],
+        suspendida=c.suspendida, motivo_suspension=c.motivo_suspension,
+        arrendador_foto=c.arrendador.foto_url,
+        arrendador_verificado=c.arrendador.verificacion == "verificado",
+        arrendador_telefono=c.arrendador.telefono if con_sesion else None,
+        fotos_detalle=[schemas.FotoSalida.model_validate(f) for f in c.fotos],
+        calificacion=promedio, total_calificaciones=total,
+        resenas=reputacion.resenas_cochera(db, c),
     )
 
 
 @router.get("/{cochera_id}", response_model=schemas.CocheraDetalle)
-def detalle(cochera_id: int, db: Session = Depends(get_db)):
-    return _detalle(db, _cochera_o_404(db, cochera_id))
+def detalle(cochera_id: int, usuario: Optional[Usuario] = Depends(usuario_opcional),
+            db: Session = Depends(get_db)):
+    cochera = _cochera_o_404(db, cochera_id)
+    # Una cochera suspendida solo la ven su dueño y el administrador.
+    if cochera.suspendida and not (usuario and (usuario.id == cochera.arrendador_id
+                                                or usuario.rol == "administrador")):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No encontramos esa cochera.")
+    return _detalle(db, cochera, con_sesion=usuario is not None)
 
 
 @router.get("/{cochera_id}/cotizar", response_model=schemas.Cotizacion)
@@ -220,7 +277,7 @@ def editar(cochera_id: int, datos: schemas.CocheraEdicion,
     cochera.ubicacion.longitud = datos.longitud
     auditoria.registrar(db, usuario.id, "cochera_editada", "cochera", cochera.id, titulo=cochera.titulo)
     db.commit()
-    return _detalle(db, cochera)
+    return _detalle(db, cochera, con_sesion=True)
 
 
 @router.patch("/{cochera_id}/estado", response_model=schemas.CocheraResumen)
@@ -228,6 +285,9 @@ def cambiar_estado(cochera_id: int, datos: schemas.EstadoEntrada,
                    usuario: Usuario = Depends(solo_arrendador), db: Session = Depends(get_db)):
     """Activa o pausa el anuncio (requisito 8)."""
     cochera = _propia_o_403(db, cochera_id, usuario)
+    if datos.activa and cochera.suspendida:
+        raise HTTPException(status.HTTP_409_CONFLICT,
+                            "Esta cochera está suspendida por moderación y no se puede activar.")
     cochera.activa = datos.activa
     auditoria.registrar(db, usuario.id, "cochera_activada" if datos.activa else "cochera_pausada",
                         "cochera", cochera.id)
@@ -245,7 +305,7 @@ def guardar_tarifas(cochera_id: int, datos: schemas.TarifasEntrada,
     auditoria.registrar(db, usuario.id, "tarifas_actualizadas", "cochera", cochera.id,
                         precio_hora=float(datos.precio_hora), franjas=len(datos.tarifas))
     db.commit()
-    return _detalle(db, cochera)
+    return _detalle(db, cochera, con_sesion=True)
 
 
 @router.put("/{cochera_id}/disponibilidad", response_model=schemas.CocheraDetalle)
@@ -257,4 +317,4 @@ def guardar_disponibilidad(cochera_id: int, datos: schemas.DisponibilidadEntrada
     auditoria.registrar(db, usuario.id, "calendario_actualizado", "cochera", cochera.id,
                         franjas=len(datos.franjas))
     db.commit()
-    return _detalle(db, cochera)
+    return _detalle(db, cochera, con_sesion=True)

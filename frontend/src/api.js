@@ -49,7 +49,7 @@ const consulta = (params) => new URLSearchParams(params).toString()
 async function pedirArchivo(ruta) {
   const token = tokenGuardado()
   const respuesta = await fetch(API_URL + ruta, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
-  if (!respuesta.ok) throw new ErrorApi('No pudimos cargar el código de acceso.', respuesta.status)
+  if (!respuesta.ok) throw new ErrorApi('No pudimos cargar el archivo.', respuesta.status)
   return respuesta.blob()
 }
 
@@ -58,9 +58,33 @@ export const api = {
   registro: (datos) => pedir('/api/auth/registro', { metodo: 'POST', cuerpo: datos }),
   login: (datos) => pedir('/api/auth/login', { metodo: 'POST', cuerpo: datos }),
   yo: () => pedir('/api/auth/yo'),
+  recuperar: (correo) => pedir('/api/auth/recuperar', { metodo: 'POST', cuerpo: { correo } }),
+  restablecer: (token, contrasena) => pedir('/api/auth/restablecer', { metodo: 'POST', cuerpo: { token, contrasena } }),
+
+  // perfil
+  perfil: () => pedir('/api/perfil'),
+  editarPerfil: (datos) => pedir('/api/perfil', { metodo: 'PUT', cuerpo: datos }),
+  cambiarContrasena: (actual, nueva) => pedir('/api/perfil/contrasena', { metodo: 'POST', cuerpo: { actual, nueva } }),
+  subirFotoPerfil: (foto) => {
+    const formulario = new FormData()
+    formulario.append('foto', foto)
+    return pedir('/api/perfil/foto', { metodo: 'POST', formulario })
+  },
+  subirDocumento: (documento) => {
+    const formulario = new FormData()
+    formulario.append('documento', documento)
+    return pedir('/api/perfil/documento', { metodo: 'POST', formulario })
+  },
+  agregarVehiculo: (datos) => pedir('/api/perfil/vehiculos', { metodo: 'POST', cuerpo: datos }),
+  eliminarVehiculo: (id) => pedir(`/api/perfil/vehiculos/${id}`, { metodo: 'DELETE' }),
+  perfilPublico: (id) => pedir(`/api/usuarios/${id}`),
 
   // cocheras
-  buscar: (lat, lng, radio_km) => pedir(`/api/cocheras/buscar?${consulta({ lat, lng, radio_km })}`),
+  buscar: (lat, lng, radio_km, filtros = {}) => {
+    const params = { lat, lng, radio_km }
+    Object.entries(filtros).forEach(([k, v]) => { if (v !== '' && v != null) params[k] = v })
+    return pedir(`/api/cocheras/buscar?${consulta(params)}`)
+  },
   cochera: (id) => pedir(`/api/cocheras/${id}`),
   editarCochera: (id, datos) => pedir(`/api/cocheras/${id}`, { metodo: 'PUT', cuerpo: datos }),
   cotizar: (id, inicio, fin) => pedir(`/api/cocheras/${id}/cotizar?${consulta({ inicio, fin })}`),
@@ -91,6 +115,27 @@ export const api = {
   pagoDevuelto: (id) => pedir(`/api/pagos/${id}/devuelto`, { metodo: 'POST' }),
   pagosArrendador: () => pedir('/api/pagos/arrendador'),
   auditoria: () => pedir('/api/auditoria'),
+
+  // calificaciones, notificaciones, reportes y disputas
+  calificar: (id, estrellas, comentario) => pedir(`/api/reservas/${id}/calificar`, { metodo: 'POST', cuerpo: { estrellas, comentario } }),
+  notificaciones: () => pedir('/api/notificaciones'),
+  marcarLeidas: () => pedir('/api/notificaciones/leidas', { metodo: 'POST' }),
+  reportar: (cocheraId, motivo, detalle) => pedir(`/api/cocheras/${cocheraId}/reportes`, { metodo: 'POST', cuerpo: { motivo, detalle } }),
+  abrirDisputa: (reservaId, tipo, descripcion) => pedir(`/api/reservas/${reservaId}/disputas`, { metodo: 'POST', cuerpo: { tipo, descripcion } }),
+  misDisputas: () => pedir('/api/disputas/mias'),
+
+  // administración
+  admin: {
+    resumen: () => pedir('/api/admin/resumen'),
+    reportes: (estado = 'pendiente') => pedir(`/api/admin/reportes?${consulta({ estado })}`),
+    resolverReporte: (id, decision, nota) => pedir(`/api/admin/reportes/${id}/resolver`, { metodo: 'POST', cuerpo: { decision, nota } }),
+    reactivarCochera: (id) => pedir(`/api/admin/cocheras/${id}/reactivar`, { metodo: 'POST' }),
+    disputas: (estado = 'abierta') => pedir(`/api/admin/disputas?${consulta({ estado })}`),
+    resolverDisputa: (id, accion, resolucion) => pedir(`/api/admin/disputas/${id}/resolver`, { metodo: 'POST', cuerpo: { accion, resolucion } }),
+    verificaciones: () => pedir('/api/admin/verificaciones'),
+    documento: (id) => pedirArchivo(`/api/admin/verificaciones/${id}/documento`),
+    resolverVerificacion: (id, aprobar) => pedir(`/api/admin/verificaciones/${id}`, { metodo: 'POST', cuerpo: { aprobar } }),
+  },
 
   // tarjetas simuladas
   tarjetas: () => pedir('/api/tarjetas'),

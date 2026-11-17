@@ -179,6 +179,7 @@ class Reserva(Base):
         back_populates="reserva", uselist=False, cascade="all, delete-orphan")
     calificaciones: Mapped[List["Calificacion"]] = relationship(
         back_populates="reserva", cascade="all, delete-orphan")
+    disputas: Mapped[List["Disputa"]] = relationship(viewonly=True)
 
 
 class CodigoAcceso(Base):

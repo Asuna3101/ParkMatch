@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, urlFoto } from '../api'
-import { Rasgos } from '../components/Comunes'
+import { Estrellas, Rasgos } from '../components/Comunes'
 import { IconoMira, IconoUbicacion } from '../components/Iconos'
 import { MapaCocheras } from '../components/Mapa'
-import { LIMA, ZONAS, soles } from '../utils'
+import { HORAS_FIN, HORAS_INICIO, LIMA, ZONAS, hhmm, hoyLima, isoLima, soles, sumarDias } from '../utils'
+
+const SIN_FILTROS = { precio_max: '', tipo_vehiculo: '', techada: '', fecha: '', hora: '', horaFin: '' }
 
 /** Mapa de cocheras disponibles alrededor de una ubicación (US-09). */
 export default function Buscar() {
@@ -19,15 +21,30 @@ export default function Buscar() {
   const pedido = useRef(0)
   const espera = useRef()
   const tarjetas = useRef({})
+  const [filtros, setFiltros] = useState(SIN_FILTROS)
+  const [verFiltros, setVerFiltros] = useState(false)
+  const zona = useRef(null)
+  const filtrosRef = useRef(SIN_FILTROS)
+
+  // Los filtros de horario solo se envían cuando están completos.
+  const parametros = (f) => {
+    const p = { precio_max: f.precio_max, tipo_vehiculo: f.tipo_vehiculo, techada: f.techada }
+    if (f.fecha && f.hora && f.horaFin) {
+      p.inicio = isoLima(f.fecha, f.hora)
+      p.fin = isoLima(f.fecha, f.horaFin)
+    }
+    return p
+  }
 
   // Cada vez que el mapa se mueve, se vuelve a buscar en la zona visible.
   const alMover = useCallback(({ lat, lng, radio }) => {
+    zona.current = { lat, lng, radio }
     clearTimeout(espera.current)
     espera.current = setTimeout(async () => {
       const turno = ++pedido.current
       setCargando(true)
       try {
-        const resultado = await api.buscar(lat.toFixed(6), lng.toFixed(6), radio.toFixed(2))
+        const resultado = await api.buscar(lat.toFixed(6), lng.toFixed(6), radio.toFixed(2), parametros(filtrosRef.current))
         if (turno !== pedido.current) return // llegó una respuesta más nueva
         setCocheras(resultado)
         setError('')
@@ -38,6 +55,14 @@ export default function Buscar() {
       }
     }, 250)
   }, [])
+
+  const cambiarFiltro = (cambios) => {
+    const nuevos = { ...filtros, ...cambios }
+    setFiltros(nuevos)
+    filtrosRef.current = nuevos
+    if (zona.current) alMover(zona.current)
+  }
+  const activos = Object.values(filtros).some(Boolean)
 
   const irA = (lat, lng, zoom = 15) => setCentro({ lat, lng, zoom, sello: Date.now() })
 
@@ -94,6 +119,61 @@ export default function Buscar() {
         </div>
         {aviso && <p className="ayuda ayuda-alerta">{aviso}</p>}
 
+        <div className="fila-botones">
+          <button type="button" className="boton boton-texto filtros-alternar" aria-expanded={verFiltros}
+            onClick={() => setVerFiltros(!verFiltros)}>
+            {verFiltros ? 'Ocultar filtros' : 'Filtros'}{activos ? ' (activos)' : ''}
+          </button>
+          {activos && <button type="button" className="boton boton-texto filtros-alternar"
+            onClick={() => cambiarFiltro(SIN_FILTROS)}>Quitar filtros</button>}
+        </div>
+        {verFiltros && (
+          <div className="filtros">
+            <label className="campo">
+              <span>Precio máx. por hora</span>
+              <input type="number" min="1" step="0.5" inputMode="decimal" value={filtros.precio_max}
+                onChange={(e) => cambiarFiltro({ precio_max: e.target.value })} placeholder="S/" />
+            </label>
+            <label className="campo">
+              <span>Mi vehículo</span>
+              <select value={filtros.tipo_vehiculo} onChange={(e) => cambiarFiltro({ tipo_vehiculo: e.target.value })}>
+                <option value="">Cualquiera</option>
+                <option value="moto">Moto</option>
+                <option value="auto">Auto</option>
+                <option value="camioneta">Camioneta</option>
+              </select>
+            </label>
+            <label className="campo">
+              <span>Techo</span>
+              <select value={filtros.techada} onChange={(e) => cambiarFiltro({ techada: e.target.value })}>
+                <option value="">Indistinto</option>
+                <option value="true">Techada</option>
+                <option value="false">Descubierta</option>
+              </select>
+            </label>
+            <label className="campo">
+              <span>Día</span>
+              <input type="date" value={filtros.fecha} min={hoyLima()} max={sumarDias(hoyLima(), 14)}
+                onChange={(e) => cambiarFiltro({ fecha: e.target.value })} />
+            </label>
+            <label className="campo">
+              <span>Llegada</span>
+              <select value={filtros.hora} onChange={(e) => cambiarFiltro({ hora: e.target.value, horaFin: '' })}>
+                <option value="">—</option>
+                {HORAS_INICIO.map((h) => <option key={h} value={h}>{hhmm(h)}</option>)}
+              </select>
+            </label>
+            <label className="campo">
+              <span>Salida</span>
+              <select value={filtros.horaFin} disabled={!filtros.hora}
+                onChange={(e) => cambiarFiltro({ horaFin: e.target.value })}>
+                <option value="">—</option>
+                {HORAS_FIN.filter((h) => h > filtros.hora).map((h) => <option key={h} value={h}>{hhmm(h)}</option>)}
+              </select>
+            </label>
+          </div>
+        )}
+
         <p className="resultado-conteo" aria-live="polite">
           {error ? <span className="mensaje-error">{error}</span>
             : cargando && !cocheras.length ? 'Buscando cocheras…'
@@ -111,7 +191,9 @@ export default function Buscar() {
                   <h2>{c.titulo}</h2>
                   <p className="tarjeta-lugar"><IconoUbicacion /> {c.direccion}, {c.distrito}</p>
                   <Rasgos cochera={c} />
+                  {c.calificacion != null && <p><Estrellas valor={c.calificacion} total={c.total_calificaciones} /></p>}
                   <p className="tarjeta-precio"><strong>{soles(c.precio_hora)}</strong> por hora
+                    {c.costo_horario != null && <span> · {soles(c.costo_horario)} en tu horario</span>}
                     {c.distancia_km != null && <span> · a {c.distancia_km < 1 ? `${Math.round(c.distancia_km * 1000)} m` : `${c.distancia_km.toFixed(1)} km`}</span>}
                   </p>
                 </div>

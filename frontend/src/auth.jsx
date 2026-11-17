@@ -39,6 +39,8 @@ export function ProveedorAuth({ children }) {
     registrarse: async (datos) => entrar(await api.registro(datos)),
     esArrendador: usuario?.rol === 'arrendador',
     esArrendatario: usuario?.rol === 'arrendatario',
+    esAdmin: usuario?.rol === 'administrador',
+    actualizarUsuario: (cambios) => setUsuario((u) => ({ ...u, ...cambios })),
   }
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>
 }

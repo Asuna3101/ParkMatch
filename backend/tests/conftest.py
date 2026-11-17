@@ -24,6 +24,7 @@ from sqlalchemy import text  # noqa: E402
 from app import config  # noqa: E402
 
 config.CARPETA_UPLOADS = Path(tempfile.mkdtemp(prefix="parkmatch_uploads_"))
+config.CARPETA_PRIVADA = Path(tempfile.mkdtemp(prefix="parkmatch_privado_"))
 
 from app.database import engine  # noqa: E402
 from app.main import app  # noqa: E402

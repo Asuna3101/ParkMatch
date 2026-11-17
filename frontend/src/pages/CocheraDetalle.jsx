@@ -2,18 +2,64 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ErrorApi, urlFoto } from '../api'
 import { useAuth } from '../auth'
-import { Error } from '../components/Comunes'
+import { Error, Estrellas, Resenas } from '../components/Comunes'
 import { IconoUbicacion } from '../components/Iconos'
 import { MapaPunto } from '../components/Mapa'
 import { useTiempoReal } from '../tiempo-real'
 import { DIAS, HORAS_FIN, HORAS_INICIO, TIPOS, fechaHora, hhmm, hoyLima, isoLima, rango, soles, sumarDias } from '../utils'
+
+const MOTIVOS = {
+  informacion_falsa: 'Información falsa', fotos_enganosas: 'Fotos engañosas', precio_abusivo: 'Precio abusivo',
+  inseguro: 'Lugar inseguro', contenido_inapropiado: 'Contenido inapropiado', otro: 'Otro motivo',
+}
+
+/** Reportar el anuncio al equipo de moderación (US-23). */
+function Reportar({ cocheraId }) {
+  const [abierto, setAbierto] = useState(false)
+  const [motivo, setMotivo] = useState('informacion_falsa')
+  const [detalle, setDetalle] = useState('')
+  const [estado, setEstado] = useState({ error: '', listo: '' })
+
+  const enviar = async (e) => {
+    e.preventDefault()
+    try {
+      const r = await api.reportar(cocheraId, motivo, detalle || null)
+      setEstado({ error: '', listo: r.mensaje })
+    } catch (err) {
+      setEstado({ error: err.message, listo: '' })
+    }
+  }
+
+  if (estado.listo) return <p className="ayuda">{estado.listo}</p>
+  if (!abierto) return <button className="boton boton-texto" onClick={() => setAbierto(true)}>Reportar este anuncio</button>
+  return (
+    <form className="bloque" onSubmit={enviar}>
+      <h2>Reportar anuncio</h2>
+      <label className="campo">
+        <span>Motivo</span>
+        <select value={motivo} onChange={(e) => setMotivo(e.target.value)}>
+          {Object.entries(MOTIVOS).map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+        </select>
+      </label>
+      <label className="campo">
+        <span>Detalle (opcional)</span>
+        <textarea rows={3} maxLength={600} value={detalle} onChange={(e) => setDetalle(e.target.value)} />
+      </label>
+      <Error>{estado.error}</Error>
+      <div className="fila-botones">
+        <button className="boton boton-primario">Enviar reporte</button>
+        <button type="button" className="boton boton-texto" onClick={() => setAbierto(false)}>Cancelar</button>
+      </div>
+    </form>
+  )
+}
 
 const ahoraEnLima = () => ({ fecha: hoyLima(), hora: HORAS_INICIO[Math.min(47, new Date().getHours() * 2 + 1)] })
 
 /** Ficha pública de una cochera: fotos, horarios, precio, mapa y reserva (US-09 a US-18). */
 export default function CocheraDetalle() {
   const { id } = useParams()
-  const { usuario, esArrendatario, esArrendador } = useAuth()
+  const { usuario, esArrendatario, esArrendador, esAdmin } = useAuth()
   const { avisar } = useTiempoReal()
   const navegar = useNavigate()
   const [c, setC] = useState(null)
@@ -147,14 +193,25 @@ export default function CocheraDetalle() {
           <h2>Calificaciones</h2>
           {c.total_calificaciones === 0
             ? <p className="ayuda">Esta cochera todavía no tiene calificaciones.</p>
-            : <p>{c.calificacion} de 5 · {c.total_calificaciones} calificaciones</p>}
+            : <>
+                <p><Estrellas valor={c.calificacion} total={c.total_calificaciones} /></p>
+                <Resenas resenas={c.resenas} />
+              </>}
         </section>
+
+        {usuario && !esDueno && <Reportar cocheraId={c.id} />}
       </div>
 
       <aside className="ficha-lateral">
         <div className="tarjeta-reserva">
           <p className="precio-grande"><strong>{soles(c.precio_hora)}</strong> <span>por hora</span></p>
-          <p className="ayuda">Arrendador: {c.arrendador_nombre}</p>
+          <p className="ayuda">
+            Arrendador: <Link to={`/usuarios/${c.arrendador_id}`}>{c.arrendador_nombre}</Link>
+            {c.arrendador_verificado && <span className="etiqueta etiqueta-ok">Verificado</span>}
+          </p>
+          {c.suspendida && (
+            <p className="ayuda ayuda-alerta">Anuncio suspendido por moderación: {c.motivo_suspension}</p>
+          )}
 
           {esDueno ? (
             <Link to={`/cocheras/${c.id}/editar`} className="boton boton-secundario boton-ancho">Editar mi cochera</Link>
@@ -163,8 +220,8 @@ export default function CocheraDetalle() {
               <p>Ingresa para reservar o escribirle al dueño.</p>
               <Link to="/ingresar" state={{ desde: `/cocheras/${c.id}` }} className="boton boton-primario boton-ancho">Ingresar para reservar</Link>
             </>
-          ) : esArrendador ? (
-            <p className="ayuda">Las cuentas de arrendador no reservan cocheras.</p>
+          ) : esArrendador || esAdmin ? (
+            <p className="ayuda">{esAdmin ? 'Las cuentas de administración' : 'Las cuentas de arrendador'} no reservan cocheras.</p>
           ) : (
             <form onSubmit={pedirReserva} noValidate className="formulario-reserva">
               <label className="campo">

@@ -60,6 +60,10 @@ HORAS_CANCELACION = 2
 # y hasta la hora de salida reservada.
 MINUTOS_ANTES_INGRESO = 30
 
+# Calificaciones (requisito 28 · US-20): se puede calificar hasta estos días
+# después de terminada la reserva.
+DIAS_PARA_CALIFICAR = 14
+
 # Reglas del anuncio (requisito 6)
 MIN_FOTOS = 3
 MAX_FOTOS = 8
@@ -68,5 +72,4 @@ TIPOS_FOTO = {
     "image/jpeg": ".jpg",
     "image/png": ".png",
     "image/webp": ".webp",
-    "image/svg+xml": ".svg",
 }
