@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, ErrorApi } from '../api'
 import { useAuth } from '../auth'
-import { Error, Estado, Vacio } from '../components/Comunes'
+import { ElegirEstrellas, Error, Estado, Vacio } from '../components/Comunes'
 import { useTiempoReal } from '../tiempo-real'
 import { fechaHora, rango, soles } from '../utils'
 
@@ -12,6 +12,85 @@ const FILTROS_ARRENDADOR = [
 ]
 
 const MEDIO = { tarjeta: 'Tarjeta', acordado: 'Acordado con el dueño' }
+const TIPOS_DISPUTA = { reserva: 'Problema con la reserva', pago: 'Problema con el pago', conducta: 'Conducta de la otra parte' }
+
+/** Calificar a la otra parte y abrir una disputa (US-20 y US-25). Lo usan ambas cuentas. */
+function DespuesDeLaReserva({ r, aQuien, alTerminar }) {
+  const { avisar } = useTiempoReal()
+  const [estrellas, setEstrellas] = useState(0)
+  const [comentario, setComentario] = useState('')
+  const [disputa, setDisputa] = useState(null)   // null = cerrado; { tipo, descripcion } = abierto
+  const [error, setError] = useState('')
+
+  const calificar = async (e) => {
+    e.preventDefault()
+    setError('')
+    try {
+      await api.calificar(r.id, estrellas, comentario.trim() || null)
+      avisar('¡Gracias por tu calificación!')
+      alTerminar()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const enviarDisputa = async (e) => {
+    e.preventDefault()
+    setError('')
+    try {
+      await api.abrirDisputa(r.id, disputa.tipo, disputa.descripcion.trim())
+      avisar('Disputa enviada. El equipo de ParkMatch la revisará.')
+      setDisputa(null)
+      alTerminar()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const puedeDisputar = ['confirmada', 'en_curso', 'finalizada', 'cancelada'].includes(r.estado) && !r.disputa_abierta
+
+  return (
+    <>
+      {r.mi_calificacion && <p className="ayuda">Calificaste a {aQuien} con {r.mi_calificacion} ★</p>}
+      {r.puede_calificar && (
+        <form className="calificar" onSubmit={calificar}>
+          <p><strong>¿Cómo te fue con {aQuien}?</strong></p>
+          <ElegirEstrellas valor={estrellas} alCambiar={setEstrellas} />
+          <label className="campo">
+            <span>Comentario (opcional)</span>
+            <textarea rows={2} maxLength={600} value={comentario} onChange={(e) => setComentario(e.target.value)} />
+          </label>
+          <button className="boton boton-primario" disabled={!estrellas}>Enviar calificación</button>
+        </form>
+      )}
+      {r.disputa_abierta && <p className="ayuda ayuda-alerta">Hay una disputa abierta sobre esta reserva.</p>}
+      {puedeDisputar && (disputa ? (
+        <form className="calificar" onSubmit={enviarDisputa}>
+          <label className="campo">
+            <span>Tipo de problema</span>
+            <select value={disputa.tipo} onChange={(e) => setDisputa({ ...disputa, tipo: e.target.value })}>
+              {Object.entries(TIPOS_DISPUTA).map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+            </select>
+          </label>
+          <label className="campo">
+            <span>Cuéntanos qué pasó <em>(mínimo 15 caracteres)</em></span>
+            <textarea rows={3} maxLength={1500} value={disputa.descripcion}
+              onChange={(e) => setDisputa({ ...disputa, descripcion: e.target.value })} />
+          </label>
+          <div className="fila-botones">
+            <button className="boton boton-primario" disabled={disputa.descripcion.trim().length < 15}>Enviar disputa</button>
+            <button type="button" className="boton boton-texto" onClick={() => setDisputa(null)}>Cancelar</button>
+          </div>
+        </form>
+      ) : (
+        <button className="boton boton-texto" onClick={() => setDisputa({ tipo: 'reserva', descripcion: '' })}>
+          Reportar un problema
+        </button>
+      ))}
+      <Error>{error}</Error>
+    </>
+  )
+}
 
 /** Reservas del arrendatario o solicitudes del arrendador, según el tipo de cuenta. */
 export default function Reservas() {
@@ -62,7 +141,7 @@ function PanelArrendatario() {
           ) : (
             <ul className="lista-reservas">
               {reservas.map((r) => (
-                <ReservaArrendatario key={r.id} r={r}
+                <ReservaArrendatario key={r.id} r={r} recargar={recargar}
                   onCancelar={() => accion(() => api.cancelar(r.id), 'Reserva cancelada.')} />
               ))}
             </ul>
@@ -74,7 +153,7 @@ function PanelArrendatario() {
   )
 }
 
-function ReservaArrendatario({ r, onCancelar }) {
+function ReservaArrendatario({ r, onCancelar, recargar }) {
   const [qr, setQr] = useState(null)
   const [confirmando, setConfirmando] = useState(false)
   const [error, setError] = useState('')
@@ -136,6 +215,7 @@ function ReservaArrendatario({ r, onCancelar }) {
           <button className="boton boton-texto boton-peligro" onClick={() => setConfirmando(true)}>Cancelar reserva</button>
         )
       )}
+      <DespuesDeLaReserva r={r} aQuien={r.arrendador_nombre} alTerminar={recargar} />
     </li>
   )
 }
@@ -238,7 +318,7 @@ function PanelArrendador() {
       ) : (
         <ul className="lista-reservas">
           {visibles.map((r) => (
-            <ReservaArrendador key={r.id} r={r}
+            <ReservaArrendador key={r.id} r={r} recargar={recargar}
               onConfirmar={() => accion(() => api.confirmar(r.id), 'Reserva confirmada.')}
               onRechazar={(motivo) => accion(() => api.rechazar(r.id, motivo), 'Solicitud rechazada.')}
               onPagoRecibido={(medio) => accion(() => api.pagoRecibido(r.id, medio), 'Pago registrado. Se emitió el comprobante.')}
@@ -273,7 +353,7 @@ function PanelArrendador() {
   )
 }
 
-function ReservaArrendador({ r, onConfirmar, onRechazar, onPagoRecibido, onIngreso, onSalida, onDevuelto }) {
+function ReservaArrendador({ r, recargar, onConfirmar, onRechazar, onPagoRecibido, onIngreso, onSalida, onDevuelto }) {
   const [motivo, setMotivo] = useState('')
   const [medio, setMedio] = useState('efectivo')
   const [codigo, setCodigo] = useState('')
@@ -331,6 +411,7 @@ function ReservaArrendador({ r, onConfirmar, onRechazar, onPagoRecibido, onIngre
           <button className="boton boton-secundario" onClick={onDevuelto}>Marcar como devuelto</button>
         </div>
       )}
+      <DespuesDeLaReserva r={r} aQuien={r.arrendatario_nombre} alTerminar={recargar} />
     </li>
   )
 }

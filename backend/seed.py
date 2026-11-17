@@ -11,6 +11,7 @@ Cuentas (todas con la contraseña  Parkmatch1):
     carlos@parkmatch.pe   arrendador
     luis@parkmatch.pe     arrendatario
     maria@parkmatch.pe    arrendataria
+    admin@parkmatch.pe    administradora (moderación, disputas y verificaciones)
 """
 import uuid
 from datetime import datetime, time, timedelta
@@ -19,8 +20,8 @@ from sqlalchemy import text
 
 from app import config
 from app.database import SessionLocal
-from app.models import (Cochera, Conversacion, Disponibilidad, FotoCochera, Mensaje, Reserva,
-                        Tarifa, Ubicacion, Usuario)
+from app.models import (Calificacion, Cochera, Conversacion, Disponibilidad, FotoCochera, Mensaje,
+                        Pago, Reporte, Reserva, Tarifa, Ubicacion, Usuario)
 from app.security import hash_contrasena
 from app.tarifas import calcular_costo
 
@@ -123,7 +124,10 @@ def main() -> None:
                             rol="arrendatario", contrasena_hash=clave),
             "maria": Usuario(nombre="María Salas", correo="maria@parkmatch.pe", telefono="955 443 322",
                              rol="arrendatario", contrasena_hash=clave),
+            "admin": Usuario(nombre="Andrea Admin", correo="admin@parkmatch.pe",
+                             rol="administrador", contrasena_hash=clave, verificacion="verificado"),
         }
+        personas["rosa"].verificacion = "verificado"
         db.add_all(personas.values())
         db.flush()
 
@@ -160,12 +164,43 @@ def main() -> None:
             Mensaje(conversacion_id=charla.id, emisor_id=personas["luis"].id,
                     texto="Perfecto. Te acabo de enviar una solicitud para mañana."),
         ])
+
+        # Historial: reservas ya terminadas, con su pago y sus calificaciones (US-20 a US-22).
+        resenas = [
+            (0, "maria", 5, 4, "Muy fácil de ubicar y el portón eléctrico funciona perfecto.",
+             "Puntual y cuidadosa al estacionar."),
+            (0, "luis", 4, 5, "Buena cochera, aunque el ingreso es un poco estrecho.", "Todo en orden, recomendado."),
+            (2, "maria", 5, None, "Seguro y con vigilante. Volveré a reservar.", None),
+            (3, "luis", 3, 4, "Cumple, pero la iluminación de noche es poca.", "Dejó el espacio limpio."),
+        ]
+        hoy = datetime.now(config.ZONA).replace(minute=0, second=0, microsecond=0)
+        for n, (indice, quien, estrellas_cochera, estrellas_conductor, texto, texto_dueno) in enumerate(resenas):
+            c = cocheras[indice]
+            ini = (hoy - timedelta(days=3 + n * 4)).replace(hour=9)
+            fn = ini.replace(hour=11)
+            costo = calcular_costo(ini, fn, c.precio_hora, c.tarifas)
+            r = Reserva(cochera_id=c.id, arrendatario_id=personas[quien].id, inicio=ini, fin=fn,
+                        estado="finalizada", costo_total=costo, ingreso_real=ini, salida_real=fn)
+            db.add(r)
+            db.flush()
+            db.add(Pago(reserva_id=r.id, monto=costo, estado="pagado", medio="efectivo", pagado_en=ini))
+            db.add(Calificacion(reserva_id=r.id, autor_id=personas[quien].id, destinatario_id=c.arrendador_id,
+                                estrellas=estrellas_cochera, comentario=texto))
+            if estrellas_conductor:
+                db.add(Calificacion(reserva_id=r.id, autor_id=c.arrendador_id,
+                                    destinatario_id=personas[quien].id,
+                                    estrellas=estrellas_conductor, comentario=texto_dueno))
+
+        # Un reporte pendiente, para que el panel de moderación tenga algo que revisar.
+        db.add(Reporte(cochera_id=cocheras[-1].id, autor_id=personas["maria"].id, motivo="fotos_enganosas",
+                       detalle="Las fotos no coinciden con el lugar: el espacio es más pequeño."))
         db.commit()
 
     print("Datos de demostración cargados.")
-    print(f"  4 cuentas (contraseña: {CLAVE}), {len(COCHERAS)} cocheras, 1 solicitud y 1 conversación.")
+    print(f"  5 cuentas (contraseña: {CLAVE}), {len(COCHERAS)} cocheras, 1 solicitud y 1 conversación.")
     print("  Arrendadores:  rosa@parkmatch.pe · carlos@parkmatch.pe")
     print("  Arrendatarios: luis@parkmatch.pe · maria@parkmatch.pe")
+    print("  Administradora: admin@parkmatch.pe")
 
 
 if __name__ == "__main__":

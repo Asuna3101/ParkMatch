@@ -34,6 +34,8 @@ _CARGA = (
     selectinload(Reserva.pago).selectinload(Pago.comprobante),
     selectinload(Reserva.codigo),
     selectinload(Reserva.metodo_pago),
+    selectinload(Reserva.calificaciones),
+    selectinload(Reserva.disputas),
 )
 
 
@@ -87,7 +89,14 @@ def _salida(r: Reserva, usuario: Usuario) -> schemas.ReservaSalida:
     )
     devolucion = (r.estado == "confirmada" and r.inicio - ahora >= timedelta(hours=config.HORAS_CANCELACION))
 
+    propia = next((x for x in r.calificaciones if x.autor_id == usuario.id), None)
+    puede_calificar = (r.estado == "finalizada" and (es_arrendatario or es_arrendador)
+                       and propia is None
+                       and ahora - (r.salida_real or r.fin) <= timedelta(days=config.DIAS_PARA_CALIFICAR))
+
     return schemas.ReservaSalida(
+        puede_calificar=puede_calificar, mi_calificacion=propia.estrellas if propia else None,
+        disputa_abierta=any(d.estado == "abierta" for d in r.disputas),
         id=r.id, cochera_id=c.id, cochera_titulo=c.titulo,
         cochera_direccion=f"{c.ubicacion.direccion}, {c.ubicacion.distrito}",
         cochera_foto=c.fotos[0].url if c.fotos else None,

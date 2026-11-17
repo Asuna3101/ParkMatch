@@ -23,3 +23,9 @@ export const IconoMira = () => (
 export const IconoEnviar = () => (
   <svg {...base} width="20" height="20"><path d="M4 12 20 4l-6 16-3-7-7-1Z" /></svg>
 )
+export const IconoCampana = () => (
+  <svg {...base}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.300 21a1.940 1.940 0 0 0 3.400 0" /></svg>
+)
+export const IconoEscudo = () => (
+  <svg {...base}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /></svg>
+)
