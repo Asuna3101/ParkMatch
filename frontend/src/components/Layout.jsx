@@ -36,7 +36,7 @@ export default function Layout() {
       <header className="cabecera">
         <div className="cabecera-contenido">
           <Link to="/" className="marca" aria-label="ParkMatch, inicio">
-            <span className="marca-p" aria-hidden="true">P</span>
+            <img className="marca-icono" src="/icono.png" alt="" width="32" height="32" />
             <span className="marca-nombre">ParkMatch</span>
           </Link>
 

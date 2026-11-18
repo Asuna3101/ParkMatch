@@ -4,7 +4,7 @@
 
 BORRA todo lo que haya en las tablas y deja cuatro cuentas, siete cocheras
 en Lima, una solicitud pendiente y una conversación. Las "fotografías" son
-ilustraciones generadas aquí mismo, para no depender de archivos externos.
+fotos de demostración incluidas en la carpeta demo_fotos/.
 
 Cuentas (todas con la contraseña  Parkmatch1):
     rosa@parkmatch.pe     arrendadora
@@ -20,6 +20,7 @@ from sqlalchemy import text
 
 from app import config
 from app.database import SessionLocal
+from app.inicializar import asegurar_base_de_datos
 from app.models import (Calificacion, Cochera, Conversacion, Disponibilidad, FotoCochera, Mensaje,
                         Pago, Reporte, Reserva, Tarifa, Ubicacion, Usuario)
 from app.security import hash_contrasena
@@ -31,27 +32,12 @@ PALETAS = [("#DCE9F7", "#2F6FB5"), ("#E3F1E6", "#3B8A5A"), ("#F7EBDD", "#B5732F"
 VISTAS = ["Vista del ingreso", "Interior del espacio", "Vista desde la calle"]
 
 
+DEMO_FOTOS = ["cochera1.jpg", "cochera2.jpg", "cochera3.jpg"]
+
+
 def ilustracion(titulo: str, vista: str, paleta: int, techada: bool) -> str:
-    """Dibuja una cochera sencilla en SVG y devuelve la URL donde quedó guardada."""
-    fondo, acento = PALETAS[paleta % len(PALETAS)]
-    techo = (f'<polygon points="150,150 400,70 650,150" fill="{acento}" opacity=".85"/>'
-             if techada else f'<rect x="150" y="140" width="500" height="12" fill="{acento}" opacity=".5"/>')
-    lineas = "".join(f'<rect x="230" y="{y}" width="340" height="6" fill="{acento}" opacity=".35"/>'
-                     for y in range(190, 370, 30))
-    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" font-family="Arial, sans-serif">
-<rect width="800" height="520" fill="{fondo}"/>
-<rect y="400" width="800" height="120" fill="{acento}" opacity=".18"/>
-{techo}
-<rect x="170" y="150" width="460" height="250" fill="#ffffff" stroke="{acento}" stroke-width="6"/>
-<rect x="215" y="175" width="370" height="225" fill="{fondo}" stroke="{acento}" stroke-width="4"/>
-{lineas}
-<circle cx="700" cy="90" r="38" fill="#ffffff" opacity=".7"/>
-<text x="400" y="455" text-anchor="middle" font-size="26" font-weight="700" fill="{acento}">{titulo}</text>
-<text x="400" y="490" text-anchor="middle" font-size="19" fill="{acento}" opacity=".8">{vista} · imagen de demostración</text>
-</svg>"""
-    nombre = f"demo_{uuid.uuid4().hex}.svg"
-    (config.CARPETA_UPLOADS / nombre).write_text(svg, encoding="utf-8")
-    return f"/uploads/{nombre}"
+    """Devuelve la URL de una foto de demostración (carpeta demo_fotos/)."""
+    return f"/demo/{DEMO_FOTOS[paleta % len(DEMO_FOTOS)]}"
 
 
 def franjas(dias, inicio, fin):
@@ -109,6 +95,7 @@ def proximo_dia_habil() -> datetime:
 
 
 def main() -> None:
+    asegurar_base_de_datos()
     with SessionLocal() as db:
         db.execute(text(
             "TRUNCATE log_auditoria, mensaje, conversacion, pago, reserva, disponibilidad, "

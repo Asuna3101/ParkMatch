@@ -13,6 +13,7 @@ from starlette.concurrency import run_in_threadpool
 
 from . import config, schemas
 from .database import SessionLocal
+from .inicializar import asegurar_base_de_datos
 from .models import Conversacion, Usuario
 from .routers import admin, auth, chat, cocheras, comunidad, cuenta, perfil, reservas
 from .security import leer_token
@@ -30,6 +31,7 @@ app.add_middleware(
 )
 
 app.mount("/uploads", StaticFiles(directory=config.CARPETA_UPLOADS), name="uploads")
+app.mount("/demo", StaticFiles(directory=config.RAIZ / "demo_fotos"), name="demo")
 
 app.include_router(auth.router)
 app.include_router(cocheras.router)
@@ -39,6 +41,11 @@ app.include_router(cuenta.router)
 app.include_router(perfil.router)
 app.include_router(comunidad.router)
 app.include_router(admin.router)
+
+
+@app.on_event("startup")
+def _preparar_base_de_datos():
+    asegurar_base_de_datos()
 
 _ETIQUETAS = {
     "nombre": "El nombre", "correo": "El correo", "contrasena": "La contraseña",
